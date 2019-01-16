@@ -30,7 +30,7 @@ export default class Map extends Component {
       ...VIEW_OPTIONS
     });
 
-    promise.then(view => {
+    promise.when(view => {
       this.setState({
         view: view
       });
