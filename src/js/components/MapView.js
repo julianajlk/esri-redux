@@ -4,7 +4,7 @@ import ShareModal from "js/components/modals/Share";
 import Spinner from "js/components/shared/Spinner";
 import Controls from "js/components/Controls";
 import PopupTemplate from "esri/PopupTemplate";
-import MapImageLayer from "esri/layers/MapImageLayer";
+import Locator from "esri/tasks/Locator";
 import FeatureLayer from "esri/layers/FeatureLayer";
 import MapView from "esri/views/MapView";
 import React, { Component } from "react";
@@ -26,6 +26,11 @@ export default class Map extends Component {
 
   componentDidMount() {
     const map = new EsriMap(MAP_OPTIONS);
+
+    //set up a Locator task with geocoding
+    var locatorTask = new Locator({
+      url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
+    });
 
     // Create our map view
     const promise = new MapView({
@@ -94,10 +99,11 @@ export default class Map extends Component {
         },
         {
           type: "text",
-          text: "Address:"
+          text: "Address: "
         }
       ]
     };
+
     // Now that we have created our Map and Mapview, here is where we would add some layers!
     // see https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=layers-featurelayer for an example!
 
@@ -109,6 +115,18 @@ export default class Map extends Component {
     });
     map.add(featureLayer);
   }
+
+  handleReverseGeoCode = (longitude, latitude) => {
+    fetch(
+      `http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?f=pjson&featureTypes=&location=${longitude},${latitude}`
+    )
+      .then(response => response.json())
+      .then(location => {
+        this.setState({
+          location: location
+        });
+      });
+  };
 
   toggleLocateModal = () => {
     this.setState({ locateModalVisible: !this.state.locateModalVisible });
