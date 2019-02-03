@@ -1,0 +1,16 @@
+#filterBox {
+  position: absolute;
+  background: white;
+  width: 130px;
+  right: 20px;
+  z-index: 5;
+  top: 170px;
+  background-color: $box-background;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.filterContent {
+  display: flex;
+  margin: 0;
+}
