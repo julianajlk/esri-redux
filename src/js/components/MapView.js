@@ -1,23 +1,30 @@
-import { viewCreated, getItemInfo } from 'js/actions/mapActions';
-import { MAP_OPTIONS, VIEW_OPTIONS } from 'js/config';
-import LocateModal from 'js/components/modals/Locate';
-import ShareModal from 'js/components/modals/Share';
-import Spinner from 'js/components/shared/Spinner';
-import Controls from 'js/components/Controls';
-import MapView from 'esri/views/MapView';
-import React, { Component } from 'react';
-import appStore from 'js/appStore';
-import EsriMap from 'esri/Map';
+import { MAP_OPTIONS, VIEW_OPTIONS, LOCATION } from "js/config";
+import LocateModal from "js/components/modals/Locate";
+import ShareModal from "js/components/modals/Share";
+import Spinner from "js/components/shared/Spinner";
+import Controls from "js/components/Controls";
+import PopupTemplate from "esri/PopupTemplate";
+import MapImageLayer from "esri/layers/MapImageLayer";
+import FeatureLayer from "esri/layers/FeatureLayer";
+import MapView from "esri/views/MapView";
+import React, { Component } from "react";
+import EsriMap from "esri/Map";
 
 export default class Map extends Component {
-  displayName: 'Map';
-  state = appStore.getState();
-  view = {};
+  displayName: "Map";
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      counter: 0,
+      shareModalVisible: false,
+      locateModalVisible: false,
+      view: {},
+      location: {}
+    };
+  }
 
   componentDidMount() {
-    // Subscribe to the store for updates
-    this.unsubscribe = appStore.subscribe(this.storeDidUpdate);
-
     const map = new EsriMap(MAP_OPTIONS);
 
     // Create our map view
@@ -27,31 +34,109 @@ export default class Map extends Component {
       ...VIEW_OPTIONS
     });
 
-    promise.then(view => {
-      this.view = view;
-      appStore.dispatch(viewCreated());
-      //- Webmap from https://developers.arcgis.com/javascript/latest/api-reference/esri-WebMap.html
-      // appStore.dispatch(getItemInfo('e691172598f04ea8881cd2a4adaa45ba'));
+    promise.when(view => {
+      this.setState({
+        view: view
+      });
     });
+
+    //PopupTemplate
+    var template = {
+      // autocasts as new PopupTemplate()
+      title: "Restaurant: {name}",
+      content: [
+        {
+          // It is also possible to set the fieldInfos outside of the content
+          // directly in the popupTemplate. If no fieldInfos is specifically set
+          // in the content, it defaults to whatever may be set within the popupTemplate.
+          type: "fields",
+          fieldInfos: [
+            {
+              fieldName: "cuisine",
+              label: "Type of Cuisine",
+              visible: true
+            },
+            {
+              fieldName: "phone",
+              label: "Phone",
+              visible: true,
+              format: {
+                digitSeparator: true,
+                places: 0
+              }
+            },
+            {
+              fieldName: "opening_hours",
+              label: "Opening Hours",
+              visible: true,
+              format: {
+                digitSeparator: true,
+                places: 0
+              }
+            },
+            {
+              fieldName: "website",
+              label: "Website",
+              visible: true,
+              format: {
+                digitSeparator: true,
+                places: 0
+              }
+            }
+          ]
+        },
+        {
+          // You can also set a descriptive text element. This element
+          // uses an attribute from the featurelayer which displays a
+          // sentence. Text elements can only be set within the content.
+          type: "text", // TextContentElement
+          text: "Reverse geocode: [{longitude}, {latitude}]"
+        },
+        {
+          type: "text",
+          text: "Address:"
+        }
+      ]
+    };
+    // Now that we have created our Map and Mapview, here is where we would add some layers!
+    // see https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=layers-featurelayer for an example!
+
+    var featureLayer = new FeatureLayer({
+      url:
+        "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/Restaurants_NewYork/FeatureServer/0",
+      outFields: ["*"],
+      popupTemplate: template
+    });
+    map.add(featureLayer);
   }
 
-  componentWillUnmount() {
-    this.unsubscribe();
-  }
-
-  storeDidUpdate = () => {
-    this.setState(appStore.getState());
+  toggleLocateModal = () => {
+    this.setState({ locateModalVisible: !this.state.locateModalVisible });
   };
 
-  render () {
-    const {shareModalVisible, locateModalVisible} = this.state;
+  toggleShareModal = () => {
+    this.setState({ shareModalVisible: !this.state.shareModalVisible });
+  };
+
+  render() {
+    const { shareModalVisible, locateModalVisible, view } = this.state;
 
     return (
-      <div ref='mapView' className='map-view'>
-        <Controls view={this.view} />
-        <Spinner active={!this.view.ready} />
-        <ShareModal visible={shareModalVisible} />
-        <LocateModal visible={locateModalVisible} />
+      <div ref="mapView" className="map-view">
+        <ShareModal
+          visible={shareModalVisible}
+          toggleShareModal={this.toggleShareModal}
+        />
+        <LocateModal
+          visible={locateModalVisible}
+          toggleLocateModal={this.toggleLocateModal}
+        />
+        <Controls
+          view={view}
+          toggleShareModal={this.toggleShareModal}
+          toggleLocateModal={this.toggleLocateModal}
+        />
+        <Spinner active={!view.ready} />
       </div>
     );
   }
