@@ -7,7 +7,6 @@ export const INITIAL_STATE = {
 
 export const TEXT = {
   title: "FOODIE NYC"
-  // subtitle: "Example with React, Esri, Sass, and more."
 };
 
 export const MAP_OPTIONS = {
@@ -16,8 +15,8 @@ export const MAP_OPTIONS = {
 
 export const VIEW_OPTIONS = {
   ui: { components: ["logo", "attribution"] },
-  center: [-73.95, 40.702],
-  zoom: 11
+  center: [-73.9897, 40.7411],
+  zoom: 13
 };
 
 export const URLS = {
