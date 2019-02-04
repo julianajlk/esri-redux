@@ -248,16 +248,18 @@ export default class Map extends Component {
     document
       .getElementById("neighborhood-selection")
       .addEventListener("change", () => {
-        // var neighborhoodQuery = event.target.value;
+        console.log("neighborhood", event.target.value);
+        this.setState({
+          coordinates: event.target.value
+        });
+        var neighborhoodQuery = event.target.value;
         // debugger;
-        // map.layers.forEach(function(layer) {
-        //   layer.center = neighborhoodQuery;
-        // });
-        promise.center = event.target.value;
+        // promise.center = event.target.value;
       });
   }
 
   componentWillUnmount() {
+    //restaurants cuisine
     document
       .getElementById("cuisine-selection")
       .removeEventListener("change", function setCuisineQery() {
@@ -265,6 +267,20 @@ export default class Map extends Component {
         map.layers.forEach(function(layer) {
           layer.definitionExpression = cuisineQuery;
         });
+      });
+
+    //subway hide
+    document
+      .getElementById("subway-hide")
+      .removeEventListener("click", function toggleSubway() {
+        console.log("clicked", event.target.value);
+        map.remove(subwayFeatureLayer);
+      });
+    document
+      .getElementById("subway-show")
+      .removeEventListener("click", function toggleSubway() {
+        console.log("clicked", event.target.value);
+        map.add(subwayFeatureLayer);
       });
   }
 
@@ -302,14 +318,16 @@ export default class Map extends Component {
 
           <p>Zoom to Neighborhood</p>
           <select className="selection" id="neighborhood-selection">
-            <option value="[-73.9897, 40.7411]" defaultValue>
-              downtown
+            <option value="-73.9654, 40.7829" defaultValue>
+              nyc
             </option>
+            <option value="-73.9897, 40.7411">chelsea</option>
             <option value="-73.9566, 40.7736">ues</option>
-            <option value="[-73.9754, 40.7870]">uws</option>
-            <option value="[-73.9840, 40.7549]">midtown</option>
-            <option value="[-73.9235, 40.7644]">queens</option>
-            <option value="[-73.9571, 40.7081]">brooklyn</option>
+            <option value="-73.9754, 40.7870">uws</option>
+            <option value="-73.9840, 40.7549">midtown</option>
+            <option value="-74.0030, 40.7233">downtown</option>
+            <option value="-73.9235, 40.7644">queens</option>
+            <option value="-73.9571, 40.7081">brooklyn</option>
           </select>
           <p>Subway Stops</p>
           <button id="subway-hide" className="subway-bttn" value="false">
