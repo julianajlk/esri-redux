@@ -4,9 +4,10 @@ import LocateModal from "js/components/modals/Locate";
 import ShareModal from "js/components/modals/Share";
 import Spinner from "js/components/shared/Spinner";
 import Controls from "js/components/Controls";
-import Filter from "js/components/Filter";
+import Search from "esri/widgets/Search";
+import Expand from "esri/widgets/Expand";
+import Legend from "esri/widgets/Legend";
 import PopupTemplate from "esri/PopupTemplate";
-import Locator from "esri/tasks/Locator";
 import FeatureLayer from "esri/layers/FeatureLayer";
 import MapView from "esri/views/MapView";
 import React, { Component, Fragment } from "react";
@@ -22,17 +23,13 @@ export default class Map extends Component {
       shareModalVisible: false,
       locateModalVisible: false,
       view: {},
-      location: ""
+      location: "",
+      cuisine: ""
     };
   }
 
   componentDidMount() {
     const map = new EsriMap(MAP_OPTIONS);
-
-    //set up a Locator task with geocoding
-    var locatorTask = new Locator({
-      url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
-    });
 
     // Create our map view
     const promise = new MapView({
@@ -46,6 +43,26 @@ export default class Map extends Component {
         view: view
       });
     });
+
+    //Add Search widget instance
+    const search = new Search({
+      view: promise
+    });
+    promise.ui.add(search, "bottom-left");
+
+    //Add Legend widget instance
+    const legend = new Expand({
+      content: new Legend({
+        view: promise,
+        style: {
+          type: "classic",
+          layout: "auto"
+        }
+      }),
+      view: promise,
+      expanded: false
+    });
+    promise.ui.add(legend, "bottom-right");
 
     //PopupTemplate
     var getAddressAction = {
@@ -110,13 +127,14 @@ export default class Map extends Component {
       actions: [getAddressAction]
     };
 
-    // Create FeatureLayer instance
-    var featureLayer = new FeatureLayer({
+    // Create FeatureLayer instances
+    const featureLayer = new FeatureLayer({
       url:
         "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/Restaurants_NewYork/FeatureServer/0",
       outFields: ["*"], //grab all attributes fields
       popupTemplate: template,
-      definitionExpression: "cuisine = 'italian'"
+      // definitionExpression: `cuisine = 'pizza'`,
+      definitionExpression: this.state.cuisine
     });
     map.add(featureLayer);
 
@@ -152,6 +170,15 @@ export default class Map extends Component {
     });
   }
 
+  //filter handlers
+  handleCuisineSelection = event => {
+    console.log("selected", event.target.value);
+    this.setState({
+      cuisine: event.target.value
+    });
+  };
+
+  //toggle modals
   toggleLocateModal = () => {
     this.setState({ locateModalVisible: !this.state.locateModalVisible });
   };
@@ -165,7 +192,24 @@ export default class Map extends Component {
 
     return (
       <Fragment>
-        <Filter />
+        <label id="filter-box" className="shadow">
+          <p>Filter by Cuisine</p>
+          <select className="selection" onChange={this.handleCuisineSelection}>
+            <option value="all" defaultValue>
+              all
+            </option>
+            <option value="cuisine = 'italian'">italian</option>
+            <option value="pizza">pizza</option>
+            <option value="mexican">mexican</option>
+            <option value="chinese">chinese</option>
+            <option value="american">american</option>
+            <option value="japanese">japanese</option>
+            <option value="thai">thai</option>
+            <option value="indian">indian</option>
+            <option value="french">french</option>
+            <option value="burger">burger</option>
+          </select>
+        </label>
         <div ref="mapView" className="map-view">
           <ShareModal
             visible={shareModalVisible}

@@ -1,4 +1,4 @@
-#filterBox {
+#filter-box {
   position: absolute;
   background: white;
   width: 130px;
@@ -10,7 +10,26 @@
   font-size: 14px;
 }
 
-.filterContent {
+.filter-content {
   display: flex;
   margin: 0;
+}
+
+// #filter-query button {
+//   margin-top: 10px;
+// }
+
+.selection {
+  display: block;
+  padding: 10px 40px 10px 10px;
+  height: auto;
+  border: 1px solid #dadada;
+  border-radius: 0px;
+  background: url("https://cdn.iconscout.com/icon/free/png-256/dropdown-25-475073.png")
+    right no-repeat;
+  background-color: #fff;
+  background-size: 20px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
