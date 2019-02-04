@@ -1,4 +1,5 @@
 import { MAP_OPTIONS, VIEW_OPTIONS, LOCATION } from "js/config";
+import subwayIconImg from "images/icon_nycsubway.png";
 import addressIconImg from "images/icon_address_100px.png";
 import LocateModal from "js/components/modals/Locate";
 import ShareModal from "js/components/modals/Share";
@@ -129,6 +130,44 @@ export default class Map extends Component {
       actions: [getAddressAction]
     };
 
+    var subwayTemplate = {
+      // autocasts as new PopupTemplate()
+      title: "Subway Line: {Routes_ALL}",
+      content: [
+        {
+          type: "fields",
+          fieldInfos: [
+            {
+              fieldName: "STOP_NAME",
+              label: "Stop",
+              visible: true
+            },
+            {
+              fieldName: "Routes_ALL",
+              label: "Routes",
+              visible: true
+            },
+            {
+              fieldName: "Routes_WKD",
+              label: "Routes (weekend)",
+              visible: true
+            }
+          ]
+        }
+      ]
+    };
+
+    // Define a unique value renderer and symbols
+    var subwayRenderer = {
+      type: "simple",
+      symbol: {
+        type: "picture-marker",
+        url: subwayIconImg,
+        width: 8,
+        height: 8
+      }
+    };
+
     // Create FeatureLayer instance
     const featureLayer = new FeatureLayer({
       url:
@@ -139,6 +178,15 @@ export default class Map extends Component {
       definitionExpression: this.state.cuisine
     });
     map.add(featureLayer);
+
+    var subwayFeatureLayer = new FeatureLayer({
+      url:
+        "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/NYCSubwayStops/FeatureServer/0",
+      renderer: subwayRenderer,
+      outFields: ["*"],
+      popupTemplate: subwayTemplate
+    });
+    map.add(subwayFeatureLayer);
 
     //Execute when "get address" is clicked
     const getAddress = (longitude, latitude) => {
@@ -170,6 +218,20 @@ export default class Map extends Component {
         getAddress(longitude, latitude);
       }
     });
+
+    //Event listener toggle subway
+    document
+      .getElementById("subway-hide")
+      .addEventListener("click", function toggleSubway() {
+        console.log("clicked", event.target.value);
+        map.remove(subwayFeatureLayer);
+      });
+    document
+      .getElementById("subway-show")
+      .addEventListener("click", function toggleSubway() {
+        console.log("clicked", event.target.value);
+        map.add(subwayFeatureLayer);
+      });
 
     //Event listener onChange cuisine
     document
@@ -249,6 +311,13 @@ export default class Map extends Component {
             <option value="[-73.9235, 40.7644]">queens</option>
             <option value="[-73.9571, 40.7081]">brooklyn</option>
           </select>
+          <p>Subway Stops</p>
+          <button id="subway-hide" className="subway-bttn" value="false">
+            Hide
+          </button>
+          <button id="subway-show" className="subway-bttn" value="true">
+            Show
+          </button>
         </label>
         <div ref="mapView" className="map-view">
           <ShareModal
