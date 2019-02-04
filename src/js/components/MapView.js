@@ -24,7 +24,8 @@ export default class Map extends Component {
       locateModalVisible: false,
       view: {},
       location: "",
-      cuisine: ""
+      cuisine: "",
+      coordinates: [-73.9897, 40.7411]
     };
   }
 
@@ -35,6 +36,7 @@ export default class Map extends Component {
     const promise = new MapView({
       container: this.refs.mapView,
       map: map,
+      center: this.state.coordinates,
       ...VIEW_OPTIONS
     });
 
@@ -48,7 +50,7 @@ export default class Map extends Component {
     const search = new Search({
       view: promise
     });
-    promise.ui.add(search, "bottom-left");
+    promise.ui.add(search, "bottom-right");
 
     //Add Legend widget instance
     const legend = new Expand({
@@ -62,7 +64,7 @@ export default class Map extends Component {
       view: promise,
       expanded: false
     });
-    promise.ui.add(legend, "bottom-right");
+    promise.ui.add(legend, "bottom-left");
 
     //PopupTemplate
     var getAddressAction = {
@@ -127,7 +129,7 @@ export default class Map extends Component {
       actions: [getAddressAction]
     };
 
-    // Create FeatureLayer instances
+    // Create FeatureLayer instance
     const featureLayer = new FeatureLayer({
       url:
         "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/Restaurants_NewYork/FeatureServer/0",
@@ -160,7 +162,7 @@ export default class Map extends Component {
       // }
     };
 
-    //Event handler on click
+    //Event handler on click address
     promise.popup.on("trigger-action", event => {
       if (event.action.id === "get-address") {
         let longitude = event.target.location.longitude;
@@ -168,15 +170,41 @@ export default class Map extends Component {
         getAddress(longitude, latitude);
       }
     });
+
+    //Event listener onChange cuisine
+    document
+      .getElementById("cuisine-selection")
+      .addEventListener("change", function setCuisineQery() {
+        var cuisineQuery = event.target.value;
+        map.layers.forEach(function(layer) {
+          layer.definitionExpression = cuisineQuery;
+        });
+        // featureLayer.definitionExpression = event.target.value;
+      });
+
+    //Event listner onChange neighborhood
+    document
+      .getElementById("neighborhood-selection")
+      .addEventListener("change", () => {
+        // var neighborhoodQuery = event.target.value;
+        // debugger;
+        // map.layers.forEach(function(layer) {
+        //   layer.center = neighborhoodQuery;
+        // });
+        promise.center = event.target.value;
+      });
   }
 
-  //filter handlers
-  handleCuisineSelection = event => {
-    console.log("selected", event.target.value);
-    this.setState({
-      cuisine: event.target.value
-    });
-  };
+  componentWillUnmount() {
+    document
+      .getElementById("cuisine-selection")
+      .removeEventListener("change", function setCuisineQery() {
+        var cuisineQuery = event.target.value;
+        map.layers.forEach(function(layer) {
+          layer.definitionExpression = cuisineQuery;
+        });
+      });
+  }
 
   //toggle modals
   toggleLocateModal = () => {
@@ -194,20 +222,32 @@ export default class Map extends Component {
       <Fragment>
         <label id="filter-box" className="shadow">
           <p>Filter by Cuisine</p>
-          <select className="selection" onChange={this.handleCuisineSelection}>
-            <option value="all" defaultValue>
+          <select className="selection" id="cuisine-selection">
+            <option value="" defaultValue>
               all
             </option>
             <option value="cuisine = 'italian'">italian</option>
-            <option value="pizza">pizza</option>
-            <option value="mexican">mexican</option>
-            <option value="chinese">chinese</option>
-            <option value="american">american</option>
-            <option value="japanese">japanese</option>
-            <option value="thai">thai</option>
-            <option value="indian">indian</option>
-            <option value="french">french</option>
-            <option value="burger">burger</option>
+            <option value="cuisine = 'pizza'">pizza</option>
+            <option value="cuisine = 'mexican'">mexican</option>
+            <option value="cuisine = 'chinese'">chinese</option>
+            <option value="cuisine = 'american'">american</option>
+            <option value="cuisine = 'japanese'">japanese</option>
+            <option value="cuisine = 'thai'">thai</option>
+            <option value="cuisine = 'indian'">indian</option>
+            <option value="cuisine = 'french'">french</option>
+            <option value="cuisine = 'burger'">burger</option>
+          </select>
+
+          <p>Zoom to Neighborhood</p>
+          <select className="selection" id="neighborhood-selection">
+            <option value="[-73.9897, 40.7411]" defaultValue>
+              downtown
+            </option>
+            <option value="-73.9566, 40.7736">ues</option>
+            <option value="[-73.9754, 40.7870]">uws</option>
+            <option value="[-73.9840, 40.7549]">midtown</option>
+            <option value="[-73.9235, 40.7644]">queens</option>
+            <option value="[-73.9571, 40.7081]">brooklyn</option>
           </select>
         </label>
         <div ref="mapView" className="map-view">
