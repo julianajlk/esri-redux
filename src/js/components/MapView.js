@@ -28,15 +28,17 @@ export default class Map extends Component {
       cuisine: "",
       coordinates: [-73.9897, 40.7411]
     };
+    this.map = null; //this makes map accessible outside of componentDidMount()
+    this.subwayFeatureLayer = null;
   }
 
   componentDidMount() {
-    const map = new EsriMap(MAP_OPTIONS);
+    this.map = new EsriMap(MAP_OPTIONS); //instead of const map = new EsriMap, so that it refers to this.map in the constructor, no longer local scope
 
     // Create our map view
     const promise = new MapView({
       container: this.refs.mapView,
-      map: map,
+      map: this.map,
       center: this.state.coordinates,
       ...VIEW_OPTIONS
     });
@@ -131,7 +133,6 @@ export default class Map extends Component {
     };
 
     var subwayTemplate = {
-      // autocasts as new PopupTemplate()
       title: "Subway Line: {Routes_ALL}",
       content: [
         {
@@ -177,16 +178,15 @@ export default class Map extends Component {
       // definitionExpression: `cuisine = 'pizza'`,
       definitionExpression: this.state.cuisine
     });
-    map.add(featureLayer);
 
-    var subwayFeatureLayer = new FeatureLayer({
+    this.subwayFeatureLayer = new FeatureLayer({
       url:
         "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/NYCSubwayStops/FeatureServer/0",
       renderer: subwayRenderer,
       outFields: ["*"],
       popupTemplate: subwayTemplate
     });
-    map.add(subwayFeatureLayer);
+    this.map.addMany([featureLayer, this.subwayFeatureLayer]);
 
     //Execute when "get address" is clicked
     const getAddress = (longitude, latitude) => {
@@ -195,19 +195,19 @@ export default class Map extends Component {
       )
         .then(response => response.json())
         .then(location => {
-          promise.popup.content.viewModel.content[0].text =
-            location.address.LongLabel;
-          // this.setState({
-          //   location: location.address.LongLabel
-          // });
+          // console.log("before if", location.address.LongLabel);
+          if (location.address.LongLabel !== "") {
+            // console.log("before settting text", this.state.location);
+            console.log("inside if", location.address.LongLabel);
+            promise.popup.content.viewModel.content[0].text =
+              location.address.LongLabel;
+            // console.log("after settting text", this.state.location);
+          } else {
+            promise.popup.content.viewModel.content[0].text =
+              "No address was found for this location";
+          }
+          // console.log("after if", location.address.LongLabel);
         });
-      // if (this.state.location !== "") {
-      //   promise.popup.content.viewModel.content[0].text = this.state.location;
-      //   // promise.popup.content.viewModel.content[0].fieldInfos[1].fieldName = this.state.location;
-      // } else {
-      //   promise.popup.content.viewModel.content[0].text =
-      //     "No address was found for this location";
-      // }
     };
 
     //Event handler on click address
@@ -218,71 +218,35 @@ export default class Map extends Component {
         getAddress(longitude, latitude);
       }
     });
-
-    //Event listener toggle subway
-    document
-      .getElementById("subway-hide")
-      .addEventListener("click", function toggleSubway() {
-        console.log("clicked", event.target.value);
-        map.remove(subwayFeatureLayer);
-      });
-    document
-      .getElementById("subway-show")
-      .addEventListener("click", function toggleSubway() {
-        console.log("clicked", event.target.value);
-        map.add(subwayFeatureLayer);
-      });
-
-    //Event listener onChange cuisine
-    document
-      .getElementById("cuisine-selection")
-      .addEventListener("change", function setCuisineQery() {
-        var cuisineQuery = event.target.value;
-        map.layers.forEach(function(layer) {
-          layer.definitionExpression = cuisineQuery;
-        });
-        // featureLayer.definitionExpression = event.target.value;
-      });
-
-    //Event listner onChange neighborhood
-    document
-      .getElementById("neighborhood-selection")
-      .addEventListener("change", () => {
-        console.log("neighborhood", event.target.value);
-        this.setState({
-          coordinates: event.target.value
-        });
-        var neighborhoodQuery = event.target.value;
-        // debugger;
-        // promise.center = event.target.value;
-      });
   }
 
-  componentWillUnmount() {
-    //restaurants cuisine
-    document
-      .getElementById("cuisine-selection")
-      .removeEventListener("change", function setCuisineQery() {
-        var cuisineQuery = event.target.value;
-        map.layers.forEach(function(layer) {
-          layer.definitionExpression = cuisineQuery;
-        });
-      });
+  //handle filter by chisine
+  handleCuisine = event => {
+    let cuisineQuery = event.target.value;
+    this.map.layers.forEach(function(layer) {
+      layer.definitionExpression = cuisineQuery;
+    });
+  };
 
-    //subway hide
-    document
-      .getElementById("subway-hide")
-      .removeEventListener("click", function toggleSubway() {
-        console.log("clicked", event.target.value);
-        map.remove(subwayFeatureLayer);
-      });
-    document
-      .getElementById("subway-show")
-      .removeEventListener("click", function toggleSubway() {
-        console.log("clicked", event.target.value);
-        map.add(subwayFeatureLayer);
-      });
-  }
+  //handle zoom to neighborhood
+  handleNeighborhood = () => {
+    let coordinates = event.target.value;
+    let arrayCoordinates = coordinates.split(", ").map(Number);
+    //JSON.parse("[" + coordinates + "]")
+    this.state.view.goTo({
+      center: arrayCoordinates,
+      zoom: 15
+    });
+  };
+
+  //handle subway stops
+  handleSubwayShow = () => {
+    this.map.add(this.subwayFeatureLayer);
+  };
+
+  handleSubwayHide = () => {
+    this.map.remove(this.subwayFeatureLayer);
+  };
 
   //toggle modals
   toggleLocateModal = () => {
@@ -300,7 +264,11 @@ export default class Map extends Component {
       <Fragment>
         <label id="filter-box" className="shadow">
           <p>Filter by Cuisine</p>
-          <select className="selection" id="cuisine-selection">
+          <select
+            className="selection"
+            id="cuisine-selection"
+            onChange={this.handleCuisine}
+          >
             <option value="" defaultValue>
               all
             </option>
@@ -317,7 +285,11 @@ export default class Map extends Component {
           </select>
 
           <p>Zoom to Neighborhood</p>
-          <select className="selection" id="neighborhood-selection">
+          <select
+            className="selection"
+            id="neighborhood-selection"
+            onChange={this.handleNeighborhood}
+          >
             <option value="-73.9654, 40.7829" defaultValue>
               nyc
             </option>
@@ -330,10 +302,20 @@ export default class Map extends Component {
             <option value="-73.9571, 40.7081">brooklyn</option>
           </select>
           <p>Subway Stops</p>
-          <button id="subway-hide" className="subway-bttn" value="false">
+          <button
+            id="subway-hide"
+            className="subway-bttn"
+            value="false"
+            onClick={this.handleSubwayHide}
+          >
             Hide
           </button>
-          <button id="subway-show" className="subway-bttn" value="true">
+          <button
+            id="subway-show"
+            className="subway-bttn"
+            value="true"
+            onClick={this.handleSubwayShow}
+          >
             Show
           </button>
         </label>
